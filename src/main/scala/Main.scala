@@ -1,20 +1,12 @@
-import DAO.{AppointmentDAO, DoctorDAO, LaboratoryResultDAO, MedicalRecordDAO, PatientDAO}
+import DAO._
 import Model.{Doctor, MedicalRecord}
 import Service._
 import config.Connection
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
-import java.sql.Date
-import java.sql.Timestamp
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
-object Main
-{
+object Main {
   val db = Connection.db;
 
 
@@ -26,7 +18,7 @@ object Main
   val medicalRecordService = new MedicalRecordService(new MedicalRecordDAO(db))
 
 
-  def main(args: Array[String]): Unit ={
+  def main(args: Array[String]): Unit = {
 
     println("Welcome to the Hospital Management System")
 
@@ -77,42 +69,62 @@ object Main
   }
 
 
-
-
-  def startDoctorScenario(): Unit ={
+  def startDoctorScenario(): Unit = {
     val hasAccount = askIfHasAnAccount();
-    if (hasAccount == "yes"){
+    if (hasAccount == "yes") {
       val doctorId = getDoctorId;
       showDoctorOptions();
       val option = scala.io.StdIn.readInt()
       handleOptionChoice(option, doctorId);
     }
     else {
-      println("Please contact the administration to create an account.")
+      signUpDoctor()
+      startDoctorScenario()
     }
 
   }
 
+  def signUpDoctor(): Unit = {
+    println("Enter Your Information:")
 
+    println("Name :")
+    val name = scala.io.StdIn.readLine()
 
-  def askIfHasAnAccount(): String ={
+    println("Specialization:")
+    val specialization = scala.io.StdIn.readLine()
+
+    println("Email:")
+    val email = scala.io.StdIn.readLine()
+    val doctor: Doctor = new Doctor(0, name, specialization, email)
+    addDoctorToDatabase(doctor)
+  }
+
+  def addDoctorToDatabase(doctor: Doctor): Unit = {
+    doctorService.insertDoctor(doctor).onComplete {
+      case Success(doc) => println("Doctor Added")
+      case Failure(ex) => println(s"Query Failed Because of : $ex")
+    }
+    Thread.sleep(5000)
+  }
+
+  def askIfHasAnAccount(): String = {
     println("Do you have an account? (yes/no)")
     scala.io.StdIn.readLine().toLowerCase.trim
   }
-  def getDoctorId: Int ={
+
+  def getDoctorId: Int = {
     println("Please Enter you ID : ")
     scala.io.StdIn.readInt()
   }
 
-
-  def showDoctorOptions(): Unit ={
+  def showDoctorOptions(): Unit = {
     println("What would you like to do?")
     println("1. View Appointments")
     println("2. View Medical Record for Specific Patient")
     println("3. Add Medical Records")
   }
 
-  def handleOptionChoice(option:Int, doctorId: Int): Unit ={
+  def handleOptionChoice(option: Int, doctorId: Int): Unit = {
     option match {
       case 1 =>
         println("Fetching appointments...")
@@ -132,8 +144,8 @@ object Main
     }
   }
 
-  def fetchMedicalRecordDataFromDatabase(patientId : Int): Unit ={
-    medicalRecordService.getPatientMedicalRecord(patientId).onComplete{
+  def fetchMedicalRecordDataFromDatabase(patientId: Int): Unit = {
+    medicalRecordService.getPatientMedicalRecord(patientId).onComplete {
       case Success(recordOpt) =>
         recordOpt.foreach { record =>
           val formattedRecord = record.formattedString
@@ -161,17 +173,15 @@ object Main
     Thread.sleep(5000)
   }
 
-
-
-  def addMedicalRecordForPatient(patientId: Int): Unit ={
-    medicalRecordService.addMedicalRecord(getMedicalRecordDataFromUser(patientId)).onComplete{
+  def addMedicalRecordForPatient(patientId: Int): Unit = {
+    medicalRecordService.addMedicalRecord(getMedicalRecordDataFromUser(patientId)).onComplete {
       case Success(record) => println(s"record added for patient with ID: $patientId")
       case Failure(ex) => println(s"Query Failed Because of : $ex")
     }
     Thread.sleep(5000)
   }
 
-  def getMedicalRecordDataFromUser(patientId: Int): MedicalRecord ={
+  def getMedicalRecordDataFromUser(patientId: Int): MedicalRecord = {
     println("Enter Medical Record Information:")
 
     println("Vital Signs:")
@@ -183,7 +193,7 @@ object Main
     println("Medication Details:")
     val medicationDetails = scala.io.StdIn.readLine()
 
-    new MedicalRecord(0, patientId, vitalSigns, medicalHistory,medicationDetails)
+    new MedicalRecord(0, patientId, vitalSigns, medicalHistory, medicationDetails)
   }
 
 }
