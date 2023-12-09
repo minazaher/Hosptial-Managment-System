@@ -1,8 +1,12 @@
 import DAO._
-import Model.{Doctor, MedicalRecord}
+import Main.askIfHasAnAccount
+import Model.{Appointment, Doctor, MedicalRecord, Patient}
 import Service._
 import config.Connection
 
+import java.sql.{Date, Timestamp}
+import java.text.SimpleDateFormat
+import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -29,53 +33,138 @@ object Main {
       case "doctor" =>
         startDoctorScenario()
       case "patient" =>
-        // Patient scenario
-        println("Do you have an account? (yes/no)")
-        val hasAccount = scala.io.StdIn.readLine().toLowerCase.trim
-
-        if (hasAccount == "yes") {
-          // Options for registered patient
-          println("What would you like to do?")
-          println("1. Reserve an Appointment")
-          println("2. Request Lab Test")
-          println("3. View Medical Records")
-          // Other options for patients...
-
-          val option = scala.io.StdIn.readInt()
-          option match {
-            case 1 =>
-              // Reserve an appointment
-              println("Reserving appointment...")
-            // patientService.reserveAppointment(patientId)
-            case 2 =>
-              // Request lab test
-              println("Requesting lab test...")
-            // patientService.requestLabTest(patientId)
-            case 3 =>
-              // View own medical records
-              println("Fetching your medical records...")
-            // patientService.viewOwnMedicalRecords(patientId)
-            case _ =>
-              println("Invalid option.")
-          }
-        } else {
-          // Patient without an account scenario
-          println("Please register an account to avail of our services.")
-        }
-
+        startPatientScenario()
       case _ =>
         println("Invalid user type. Please enter 'doctor' or 'patient'.")
     }
   }
 
 
+  def addPatientToDatabase(patient: Patient): Unit = {
+    patientService.inserPatient(patient).onComplete {
+      case Success(doc) => println("Doctor Added")
+      case Failure(ex) => println(s"Query Failed Because of : $ex")
+    }
+    Thread.sleep(5000)
+  }
+
+  def signUpPatient(): Unit = {
+
+    println("Enter Patient Name:")
+    val patientName = scala.io.StdIn.readLine()
+
+    println("Enter Year of Birth:")
+    val year = scala.io.StdIn.readInt()
+
+    println("Enter Month of Birth (1-12):")
+    val month = scala.io.StdIn.readInt()
+
+    println("Enter Date of Birth (1-31):")
+    val date = scala.io.StdIn.readInt()
+
+    val dobStr = s"$year-$month-$date"
+    val sdf = new SimpleDateFormat("yyyy-MM-dd")
+    val dob = new Date(sdf.parse(dobStr).getTime)
+
+    println("Enter Contact Info:")
+    val contactInfo = scala.io.StdIn.readLine()
+
+
+    addPatientToDatabase(Patient(0, patientName, dob, contactInfo))
+  }
+
+  @tailrec
+  def startPatientScenario(): Unit ={
+    val hasAccount = askIfHasAnAccount();
+    if (hasAccount == "yes") {
+      val patientId = getUserId;
+      showPatientOptions();
+      val option = scala.io.StdIn.readInt()
+      handlePatientOptionChoice(option, patientId)
+    }
+    else{
+      signUpPatient()
+      startPatientScenario()
+    }
+  }
+
+
+  def showPatientOptions(): Unit = {
+    println("What would you like to do?")
+    println("1. Reserve an Appointment")
+    println("2. Request Lab Test")
+    println("3. View Medical Records")
+  }
+
+  def getAppointmentDataFromUser(patientId: Int) : Appointment= {
+
+    println("Enter Doctor ID:")
+    val doctorId = scala.io.StdIn.readInt()
+
+    println("Enter Patient ID:")
+    val patientId = scala.io.StdIn.readInt()
+
+    println("Enter Month (1-12):")
+    val month = scala.io.StdIn.readInt()
+
+    println("Enter Day (1-31):")
+    val date = scala.io.StdIn.readInt()
+
+    println("Enter Hour (0-23):")
+    val hour = scala.io.StdIn.readInt()
+
+    println("Enter Minute (0-59):")
+    val minute = scala.io.StdIn.readInt()
+
+    val dateTimeStr = s"2023-$month-$date $hour:$minute:00"
+    val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    val dateTime = sdf.parse(dateTimeStr)
+
+    println("Enter Appointment Purpose:")
+    val appointmentPurpose = scala.io.StdIn.readLine()
+
+    Appointment(0, doctorId, patientId, new Timestamp(dateTime.getTime), appointmentPurpose)
+  }
+
+  def saveAppointment(appointment: Appointment): Unit = {
+    appointmentService.addAppointment(appointment).onComplete{
+      case Success(app) => println(s"The following appointment has been added : $app")
+      case Failure(ex) => println(s"Query Failed Because of : $ex")
+    }
+    Thread.sleep(5000)
+  }
+
+  def reserveAppointment(patientId: Int): Unit = {
+    val appointment = getAppointmentDataFromUser(patientId);
+    saveAppointment(appointment)
+  }
+
+  def handlePatientOptionChoice(option: Int, patientId: Int): Unit = {
+    option match {
+      case 1 =>
+        println("Reserving appointment...")
+        reserveAppointment(patientId)
+      case 2 =>
+        println("Getting Laboratory Results...")
+        laboratoryResultService.getLaboratoryResultsForPatient(patientId)
+      case 3 =>
+        println("Fetching your medical records...")
+        medicalRecordService.getPatientMedicalRecord(patientId)
+      case _ =>
+        println("Invalid option.")
+    }
+
+  }
+
+
+  @tailrec
   def startDoctorScenario(): Unit = {
     val hasAccount = askIfHasAnAccount();
     if (hasAccount == "yes") {
-      val doctorId = getDoctorId;
+      val doctorId = getUserId;
       showDoctorOptions();
       val option = scala.io.StdIn.readInt()
-      handleOptionChoice(option, doctorId);
+      handleDoctorOptionChoice(option, doctorId);
     }
     else {
       signUpDoctor()
@@ -112,7 +201,7 @@ object Main {
     scala.io.StdIn.readLine().toLowerCase.trim
   }
 
-  def getDoctorId: Int = {
+  def getUserId: Int = {
     println("Please Enter you ID : ")
     scala.io.StdIn.readInt()
   }
@@ -124,7 +213,7 @@ object Main {
     println("3. Add Medical Records")
   }
 
-  def handleOptionChoice(option: Int, doctorId: Int): Unit = {
+  def handleDoctorOptionChoice(option: Int, doctorId: Int): Unit = {
     option match {
       case 1 =>
         println("Fetching appointments...")
@@ -155,7 +244,6 @@ object Main {
     }
     Thread.sleep(5000)
   }
-
 
   def fetchAppointmentsForDoctorFromDatabase(doctorId: Int): Unit = {
     appointmentService.getAppointmentsForDoctor(doctorId).onComplete {
