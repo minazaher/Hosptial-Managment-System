@@ -1,0 +1,5 @@
+package Service
+
+class AppointmentService {
+
+}
