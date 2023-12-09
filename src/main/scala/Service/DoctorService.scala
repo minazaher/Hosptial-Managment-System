@@ -11,4 +11,8 @@ class DoctorService(doctorDAO: DoctorDAO) {
     doctorDAO.getDoctorById(id)
   }
 
+  def insertDoctor(doctor: Doctor): Future[Int] = {
+    doctorDAO.addDoctor(doctor)
+  }
+
 }

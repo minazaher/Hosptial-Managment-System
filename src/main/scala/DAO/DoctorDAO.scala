@@ -12,4 +12,8 @@ class DoctorDAO(val db: Database) {
     db.run(doctors.filter(_.doctor_id === id).result.headOption)
   }
 
+  def addDoctor(doctor: Doctor): Future[Int] = {
+    db.run(doctors += doctor)
+  }
+
 }

@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DBNavigator.Project.DataEditorManager">
+    <record-view-column-sorting-type value="BY_INDEX" />
+    <value-preview-text-wrapping value="true" />
+    <value-preview-pinned value="false" />
+  </component>
   <component name="DBNavigator.Project.DatabaseBrowserManager">
     <autoscroll-to-editor value="false" />
     <autoscroll-from-editor value="true" />
@@ -8,11 +13,27 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206">
-      <console name="Connection" type="STANDARD" schema="" session="Main" />
+      <console name="Connection" type="STANDARD" schema="hospital" session="Main"><![CDATA[INSERT INTO Appointments (appointment_id, doctor_id, patient_id, appointment_date_time, appointment_purpose)
+VALUES
+  (1, 1, 1, '2023-12-15 09:00:00', 'General Checkup'),
+  (2, 1, 2, '2023-12-16 10:30:00', 'Follow-up Appointment'),
+  (3, 1, 3, '2023-12-17 14:00:00', 'Consultation');]]></console>
     </connection>
   </component>
+  <component name="DBNavigator.Project.DatabaseEditorStateManager">
+    <last-used-providers />
+  </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" object-ref="consoles/Connection" />
+      <object connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" object-ref="schemas/hospital/tables/patients" />
+    </open-files>
+  </component>
+  <component name="DBNavigator.Project.DatasetFilterManager">
+    <filter-actions connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" dataset="hospital.patients" active-filter-id="" />
+  </component>
+  <component name="DBNavigator.Project.ExecutionManager">
+    <retain-sticky-names value="false" />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
@@ -511,5 +532,9 @@
         </visibility-settings>
       </environment>
     </general-settings>
+  </component>
+  <component name="DBNavigator.Project.StatementExecutionManager">
+    <execution-variables />
+    <execution-variable-types />
   </component>
 </project>

@@ -1,13 +1,13 @@
 package Service
 
 import DAO.PatientDAO
-import Model.Doctor
+import Model.Patient
 
 import scala.concurrent.Future
 
 class PatientService (patientDao:PatientDAO){
 
-  def getPatientById(id: Int):  Future[Option[Doctor]]={
+  def getPatientById(id: Int):  Future[Option[Patient]]={
     patientDao.getPatientById(id)
   }
 }

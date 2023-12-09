@@ -18,4 +18,7 @@ class MedicalRecordDAO(val db: Database) {
     db.run(medicalRecords += record)
   }
 
+  def getMedicalRecordForPatient(patientId: Int): Future[Option[MedicalRecord]]= {
+    db.run(medicalRecords.filter(_.patient_id === patientId).result.headOption)
+  }
 }

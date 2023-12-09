@@ -2,7 +2,6 @@ package DAO
 
 import Model.Patient
 import Table.PatientTable
-import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.TableQuery
 

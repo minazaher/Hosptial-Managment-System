@@ -15,4 +15,7 @@ class MedicalRecordService(medicalRecordDAO: MedicalRecordDAO) {
     medicalRecordDAO.addMedicalRecord(record)
   }
 
+  def getPatientMedicalRecord(patientId: Int): Future[Option[MedicalRecord]] = {
+    medicalRecordDAO.getMedicalRecordForPatient(patientId)
+  }
 }
