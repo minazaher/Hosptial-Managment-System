@@ -24,10 +24,7 @@ VALUES
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" object-ref="consoles/Connection" />
-      <object connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" object-ref="schemas/hospital/tables/patients" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
     <filter-actions connection-id="87732dc3-6bcd-4ea7-ac99-7a1c6c39d206" dataset="hospital.patients" active-filter-id="" />

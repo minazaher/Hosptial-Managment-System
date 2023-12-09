@@ -40,9 +40,25 @@ object Main {
   }
 
 
+
+  @tailrec
+  def startPatientScenario(): Unit ={
+    val hasAccount = askIfHasAnAccount();
+    if (hasAccount == "yes") {
+      val patientId = getUserId;
+      showPatientOptions();
+      val option = scala.io.StdIn.readInt()
+      handlePatientOptionChoice(option, patientId)
+    }
+    else{
+      signUpPatient()
+      startPatientScenario()
+    }
+  }
+
   def addPatientToDatabase(patient: Patient): Unit = {
-    patientService.inserPatient(patient).onComplete {
-      case Success(doc) => println("Doctor Added")
+    patientService.insertPatient(patient).onComplete {
+      case Success(doc) => println("Account Added")
       case Failure(ex) => println(s"Query Failed Because of : $ex")
     }
     Thread.sleep(5000)
@@ -73,21 +89,6 @@ object Main {
     addPatientToDatabase(Patient(0, patientName, dob, contactInfo))
   }
 
-  @tailrec
-  def startPatientScenario(): Unit ={
-    val hasAccount = askIfHasAnAccount();
-    if (hasAccount == "yes") {
-      val patientId = getUserId;
-      showPatientOptions();
-      val option = scala.io.StdIn.readInt()
-      handlePatientOptionChoice(option, patientId)
-    }
-    else{
-      signUpPatient()
-      startPatientScenario()
-    }
-  }
-
 
   def showPatientOptions(): Unit = {
     println("What would you like to do?")
@@ -100,9 +101,6 @@ object Main {
 
     println("Enter Doctor ID:")
     val doctorId = scala.io.StdIn.readInt()
-
-    println("Enter Patient ID:")
-    val patientId = scala.io.StdIn.readInt()
 
     println("Enter Month (1-12):")
     val month = scala.io.StdIn.readInt()
