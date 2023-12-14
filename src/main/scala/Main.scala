@@ -1,4 +1,4 @@
-import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO}
+import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO, PatientActor, insertPatient}
 import DAO._
 import Main.askIfHasAnAccount
 import Model.{Appointment, Doctor, MedicalRecord, Patient}
@@ -26,7 +26,10 @@ object Main {
   // Create ActorSystem and Actors
   val system: ActorSystem = ActorSystem("crudSystem")
   val doctorDAO = new DoctorDAO(Connection.db)
+  val patientDAO: PatientDAO = new PatientDAO(db)
+
   val doctorActor: ActorRef = system.actorOf(Props(new DoctorActor(doctorDAO)), "doctorActor")
+  val patientActor: ActorRef = system.actorOf(Props(new PatientActor(patientDAO)), "patientActor")
 
   def main(args: Array[String]): Unit = {
 
@@ -63,11 +66,7 @@ object Main {
   }
 
   def addPatientToDatabase(patient: Patient): Unit = {
-    patientService.insertPatient(patient).onComplete {
-      case Success(doc) => println("Account Added")
-      case Failure(ex) => println(s"Query Failed Because of : $ex")
-    }
-    Thread.sleep(5000)
+    patientActor ! insertPatient(patient)
   }
 
   def signUpPatient(): Unit = {
@@ -92,7 +91,7 @@ object Main {
     val contactInfo = scala.io.StdIn.readLine()
 
 
-    addPatientToDatabase(Patient(0, patientName, dob, contactInfo))
+    addPatientToDatabase(Patient(120, patientName, dob, contactInfo))
   }
 
 

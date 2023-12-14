@@ -24,7 +24,5 @@ class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
         case Success(doc) => println("Account Added")
         case Failure(ex) => println(s"Query Failed Because of : $ex")
       }
-
-
   }
 }
