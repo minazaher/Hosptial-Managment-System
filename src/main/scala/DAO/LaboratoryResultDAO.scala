@@ -19,5 +19,4 @@ class LaboratoryResultDAO(val db: Database) {
   def getLaboratoryResultsForPatient(patientId: Int): Future[Seq[LaboratoryResult]] = {
     db.run(laboratoryResults.filter(_.patient_id === patientId).result)
   }
-  // Implement other CRUD operations for LaboratoryResult as needed
 }

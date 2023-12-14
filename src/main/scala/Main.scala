@@ -1,8 +1,8 @@
-import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO, MedicalRecordsActor, PatientActor, addMedicalRecord, getPatientMedicalRecord, insertPatient}
+import Actors.{AppointmentActor, CreateDoctor, DoctorActor, InitializeDoctorDAO, LaboratoryResultActor, MedicalRecordsActor, PatientActor, addAppointment, addMedicalRecord, getAppointmentsForDoctor, getLaboratoryResultsForPatient, getPatientMedicalRecord, insertPatient}
 import DAO._
 import Main.askIfHasAnAccount
 import Model.{Appointment, Doctor, MedicalRecord, Patient}
-import Service._
+import Table.LaboratoryResultTable
 import akka.actor.{ActorRef, ActorSystem, Props}
 import config.Connection
 
@@ -18,14 +18,17 @@ object Main {
 
   // Create ActorSystem and Actors
   val system: ActorSystem = ActorSystem("crudSystem")
-  val doctorDAO = new DoctorDAO(Connection.db)
+  val doctorDAO = new DoctorDAO(db)
   val patientDAO: PatientDAO = new PatientDAO(db)
   val medicalRecordDao: MedicalRecordDAO = new MedicalRecordDAO(db)
+  val appointmentDAO: AppointmentDAO = new AppointmentDAO(db)
+  val labDao: LaboratoryResultDAO = new LaboratoryResultDAO(db)
 
   val doctorActor: ActorRef = system.actorOf(Props(new DoctorActor(doctorDAO)), "doctorActor")
   val patientActor: ActorRef = system.actorOf(Props(new PatientActor(patientDAO)), "patientActor")
   val medicalRecordActor: ActorRef = system.actorOf(Props(new MedicalRecordsActor(medicalRecordDao)), "medicalRecordActor")
-
+  val appointmentActor: ActorRef = system.actorOf(Props(new AppointmentActor(appointmentDAO)), "appointmentActor")
+  val labResultActor: ActorRef = system.actorOf(Props(new LaboratoryResultActor(labDao)), "labResultActor")
   def main(args: Array[String]): Unit = {
 
     println("Welcome to the Hospital Management System")
@@ -125,11 +128,7 @@ object Main {
   }
 
   def saveAppointment(appointment: Appointment): Unit = {
-    appointmentService.addAppointment(appointment).onComplete{
-      case Success(app) => println(s"The following appointment has been added : $app")
-      case Failure(ex) => println(s"Query Failed Because of : $ex")
-    }
-    Thread.sleep(5000)
+    appointmentActor ! addAppointment(appointment)
   }
 
   def reserveAppointment(patientId: Int): Unit = {
@@ -144,7 +143,7 @@ object Main {
         reserveAppointment(patientId)
       case 2 =>
         println("Getting Laboratory Results...")
-        laboratoryResultService.getLaboratoryResultsForPatient(patientId)
+        labResultActor ! getLaboratoryResultsForPatient(patientId)
       case 3 =>
         println("Fetching your medical records...")
         medicalRecordActor ! getPatientMedicalRecord(patientId)
@@ -232,19 +231,7 @@ object Main {
   }
 
   def fetchAppointmentsForDoctorFromDatabase(doctorId: Int): Unit = {
-    appointmentService.getAppointmentsForDoctor(doctorId).onComplete {
-      case Success(appointments) =>
-        appointments match {
-          case Nil =>
-            println("No appointments found for this doctor.")
-          case _ =>
-            println(s"Appointments for doctor with ID : $doctorId:")
-            appointments.foreach(appointment => println(appointment.toString))
-        }
-      case Failure(ex) =>
-        println(s"Query failed because of: $ex")
-    }
-    Thread.sleep(5000)
+      appointmentActor ! getAppointmentsForDoctor(doctorId)
   }
 
   def addMedicalRecordForPatient(patientId: Int): Unit = {
