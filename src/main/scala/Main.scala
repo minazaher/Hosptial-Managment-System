@@ -1,4 +1,4 @@
-import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO, PatientActor, insertPatient}
+import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO, MedicalRecordsActor, PatientActor, addMedicalRecord, getPatientMedicalRecord, insertPatient}
 import DAO._
 import Main.askIfHasAnAccount
 import Model.{Appointment, Doctor, MedicalRecord, Patient}
@@ -16,20 +16,15 @@ object Main {
   val db = Connection.db;
 
 
-  // Initialize services for different entities
-  val doctorService = new DoctorService(new DoctorDAO(db))
-  val patientService = new PatientService(new PatientDAO(db))
-  val appointmentService = new AppointmentService(new AppointmentDAO(db))
-  val laboratoryResultService = new LaboratoryResultService(new LaboratoryResultDAO(db))
-  val medicalRecordService = new MedicalRecordService(new MedicalRecordDAO(db))
-
   // Create ActorSystem and Actors
   val system: ActorSystem = ActorSystem("crudSystem")
   val doctorDAO = new DoctorDAO(Connection.db)
   val patientDAO: PatientDAO = new PatientDAO(db)
+  val medicalRecordDao: MedicalRecordDAO = new MedicalRecordDAO(db)
 
   val doctorActor: ActorRef = system.actorOf(Props(new DoctorActor(doctorDAO)), "doctorActor")
   val patientActor: ActorRef = system.actorOf(Props(new PatientActor(patientDAO)), "patientActor")
+  val medicalRecordActor: ActorRef = system.actorOf(Props(new MedicalRecordsActor(medicalRecordDao)), "medicalRecordActor")
 
   def main(args: Array[String]): Unit = {
 
@@ -91,7 +86,7 @@ object Main {
     val contactInfo = scala.io.StdIn.readLine()
 
 
-    addPatientToDatabase(Patient(120, patientName, dob, contactInfo))
+    addPatientToDatabase(Patient(0, patientName, dob, contactInfo))
   }
 
 
@@ -152,7 +147,7 @@ object Main {
         laboratoryResultService.getLaboratoryResultsForPatient(patientId)
       case 3 =>
         println("Fetching your medical records...")
-        medicalRecordService.getPatientMedicalRecord(patientId)
+        medicalRecordActor ! getPatientMedicalRecord(patientId)
       case _ =>
         println("Invalid option.")
     }
@@ -233,15 +228,7 @@ object Main {
   }
 
   def fetchMedicalRecordDataFromDatabase(patientId: Int): Unit = {
-    medicalRecordService.getPatientMedicalRecord(patientId).onComplete {
-      case Success(recordOpt) =>
-        recordOpt.foreach { record =>
-          val formattedRecord = record.formattedString
-          println(s"The Needed Medical Record for Patient with ID : ($patientId), is:\n$formattedRecord")
-        }
-      case Failure(ex) => println(s"Query Failed Because of : $ex")
-    }
-    Thread.sleep(5000)
+    medicalRecordActor ! getPatientMedicalRecord(patientId)
   }
 
   def fetchAppointmentsForDoctorFromDatabase(doctorId: Int): Unit = {
@@ -261,11 +248,7 @@ object Main {
   }
 
   def addMedicalRecordForPatient(patientId: Int): Unit = {
-    medicalRecordService.addMedicalRecord(getMedicalRecordDataFromUser(patientId)).onComplete {
-      case Success(record) => println(s"record added for patient with ID: $patientId")
-      case Failure(ex) => println(s"Query Failed Because of : $ex")
-    }
-    Thread.sleep(5000)
+    medicalRecordActor ! addMedicalRecord(getMedicalRecordDataFromUser(patientId))
   }
 
   def getMedicalRecordDataFromUser(patientId: Int): MedicalRecord = {

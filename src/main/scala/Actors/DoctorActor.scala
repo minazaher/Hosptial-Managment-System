@@ -16,7 +16,6 @@ case class InitializeDoctorDAO(dao: DoctorDAO)
 
 
 class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
-  val doctorsTable = TableQuery[DoctorTable]
 
   override def receive: Receive = {
     case CreateDoctor(doctor) =>
