@@ -10,3 +10,4 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
   "mysql" % "mysql-connector-java" % "8.0.33"
 )
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.9.0-M2"

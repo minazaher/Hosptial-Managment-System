@@ -1,7 +1,9 @@
+import Actors.{CreateDoctor, DoctorActor, InitializeDoctorDAO}
 import DAO._
 import Main.askIfHasAnAccount
 import Model.{Appointment, Doctor, MedicalRecord, Patient}
 import Service._
+import akka.actor.{ActorRef, ActorSystem, Props}
 import config.Connection
 
 import java.sql.{Date, Timestamp}
@@ -21,6 +23,10 @@ object Main {
   val laboratoryResultService = new LaboratoryResultService(new LaboratoryResultDAO(db))
   val medicalRecordService = new MedicalRecordService(new MedicalRecordDAO(db))
 
+  // Create ActorSystem and Actors
+  val system: ActorSystem = ActorSystem("crudSystem")
+  val doctorDAO = new DoctorDAO(Connection.db)
+  val doctorActor: ActorRef = system.actorOf(Props(new DoctorActor(doctorDAO)), "doctorActor")
 
   def main(args: Array[String]): Unit = {
 
@@ -178,20 +184,16 @@ object Main {
     val name = scala.io.StdIn.readLine()
 
     println("Specialization:")
-    val specialization = scala.io.StdIn.readLine()
+    val spec = scala.io.StdIn.readLine()
 
     println("Email:")
     val email = scala.io.StdIn.readLine()
-    val doctor: Doctor = new Doctor(0, name, specialization, email)
+    val doctor: Doctor = Doctor(doctor_id = 5, doctor_name = name, specialization = spec, contact_info = email)
     addDoctorToDatabase(doctor)
   }
 
   def addDoctorToDatabase(doctor: Doctor): Unit = {
-    doctorService.insertDoctor(doctor).onComplete {
-      case Success(doc) => println("Doctor Added")
-      case Failure(ex) => println(s"Query Failed Because of : $ex")
-    }
-    Thread.sleep(5000)
+    doctorActor ! CreateDoctor(doctor)
   }
 
   def askIfHasAnAccount(): String = {
