@@ -19,7 +19,7 @@ class PatientActor(patientDAO: PatientDAO) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case insertPatient(patient) =>
-      patientDAO.insertPatient(patient ).onComplete {
+      patientDAO.insertPatient(patient).onComplete {
         case Success(patient) => println(s"Account Added For patient ${patient}")
         case Failure(ex) => println(s"Query Failed Because of : $ex")
       }

@@ -1,7 +1,7 @@
 package Actors
 
 import DAO.DoctorDAO
-import Model.Doctor
+import Model.{Appointment, Doctor}
 import _root_.Table.DoctorTable
 import akka.actor.{Actor, ActorLogging}
 import config.Connection
@@ -19,6 +19,8 @@ case class Login(email: String)
 case class LoginSuccess(userId: Int)
 case class LoginFailure(message: String)
 case class GetAppointments(doctorId: Int)
+
+case class onAppointmentsRetrieved(appointments: Seq[Appointment])
 
 
 class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
@@ -52,8 +54,9 @@ class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
       }
     case GetAppointments(doctorId) =>
       val appointmentList = dao.getAppointments(doctorId)
+      val originalSender = sender()
       appointmentList.onComplete {
-        case Success(appointments) => appointments.foreach(appointment => println(appointment.toString))
+        case Success(appointments) => originalSender ! onAppointmentsRetrieved(appointments)
         case Failure(ex) => println(s"error due to : $ex")
       }
 

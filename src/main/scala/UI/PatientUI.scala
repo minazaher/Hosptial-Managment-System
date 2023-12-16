@@ -1,8 +1,9 @@
 package UI
 
-import Actors.{AppointmentActor, LaboratoryResultActor, Login, LoginFailure, LoginSuccess, MedicalRecordsActor, PatientActor, addAppointment, getPatientMedicalRecord, insertPatient}
+import Actors.{AppointmentActor, LaboratoryResultActor, Login, LoginFailure, LoginSuccess, MedicalRecordsActor, PatientActor, addAppointment, getPatientMedicalRecord, insertPatient, onMedicalRecordsRetrieved}
 import DAO.{AppointmentDAO, LaboratoryResultDAO, MedicalRecordDAO, PatientDAO}
 import Model.{Appointment, Patient}
+import UI.DoctorUI.{medicalRecordActor, showDoctorOptions}
 import UI.MainFunction.startMainUI
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
@@ -18,7 +19,7 @@ import scala.util.{Failure, Success}
 object PatientUI {
 
   val db = Connection.db
-  val system: ActorSystem = ActorSystem("crudSystem")
+  val system: ActorSystem = ActorSystem("Hospital System")
 
   val patientDAO: PatientDAO = new PatientDAO(db)
   val appointmentDAO: AppointmentDAO = new AppointmentDAO(db)
@@ -83,32 +84,52 @@ object PatientUI {
   def reserveAppointment(patientId: Int): Unit = {
     val appointment = getAppointmentDataFromUser(patientId)
     saveAppointment(appointment)
+    Thread.sleep(1500)
+    showPatientOptions(patientId)
   }
 
+
+  def getPatientRecord(patientId: Int) = {
+
+    implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+    val result =  medicalRecordActor ? getPatientMedicalRecord(patientId)
+    result.onComplete{
+      case Success(onMedicalRecordsRetrieved(records)) =>
+        if(records.isEmpty){
+          println("You Don't Have Any Medical Records")
+        }
+        else {
+          records.foreach { record =>
+            val formattedRecord = record.formattedString
+            println(s"The Needed Medical Record for Patient with ID : ($patientId), is:\n$formattedRecord")
+          }
+        }
+        showPatientOptions(patientId)
+      case Failure(exception) => println(s"Query failed due to : $exception" )
+    }
+
+
+  }
 
   def showPatientOptions(patientId: Int): Unit = {
     println("What would you like to do?")
     println("1. Reserve an Appointment")
-    println("2. Request Lab Test")
-    println("3. View Medical Records")
+    println("2. View Medical Records")
+    println("3. Logout")
 
     val choice = scala.io.StdIn.readInt()
     choice match {
       case 1 =>
         reserveAppointment(patientId = patientId )
       case 2 =>
-        /*
-
-         */
+        getPatientRecord(patientId)
       case 3 =>
-        medicalRecordActor ! getPatientMedicalRecord(patientId)
-      case 4 =>
         logout()
       case _ =>
         println("Invalid choice. Please enter a number between 1 and 6.")
         showPatientOptions(patientId)
     }
-    showPatientOptions(patientId)
   }
 
 

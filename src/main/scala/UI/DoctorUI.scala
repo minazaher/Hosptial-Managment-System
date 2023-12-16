@@ -15,7 +15,8 @@ import scala.util.{Failure, Success}
 
 object DoctorUI {
     val db = Connection.db
-    val system: ActorSystem = ActorSystem("crudSystem")
+    val system: ActorSystem = ActorSystem("Hospital System")
+
     val doctorDAO = new DoctorDAO(db)
     val medicalRecordDao: MedicalRecordDAO = new MedicalRecordDAO(db)
 
@@ -79,22 +80,17 @@ object DoctorUI {
             case 1 =>
                 viewAppointments(doctorId = doctor_id)
             case 2 =>
-                fetchPatientMedicalRecord()
+                fetchPatientMedicalRecord(doctorId = doctor_id)
             case 3 =>
-                addMedicalRecordForPatient()
+                addMedicalRecordForPatient(doctor_id)
             case 4 =>
                 logout()
             case _ =>
                 println("Invalid choice. Please enter a number between 1 and 6.")
                 showDoctorOptions(doctor_id)
         }
-        showDoctorOptions(doctor_id)
     }
-    def viewAppointments(doctorId: Int): Unit = {
-        println("View Appointments")
-        doctorActor ! GetAppointments(doctorId)
-        showDoctorOptions(doctorId)
-    }
+
 
     def logout(): Unit = {
         println("Logout")
@@ -113,19 +109,45 @@ object DoctorUI {
         addDoctorToDatabase(doctor)
         loginUser()
     }
+
+    def viewAppointments(doctorId: Int): Unit = {
+        implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+        val result = doctorActor ? GetAppointments(doctorId)
+
+        result.onComplete{
+            case Success(onAppointmentsRetrieved(appointments)) =>
+                appointments.foreach(appointment => println(appointment.toString))
+                showDoctorOptions(doctorId)
+            case Failure(exception) => println(s"error due to $exception")
+        }
+    }
+
     def addDoctorToDatabase(doctor: Doctor): Unit = {
         doctorActor ! CreateDoctor(doctor)
     }
 
-    def fetchPatientMedicalRecord(): Unit = {
+    def fetchPatientMedicalRecord(doctorId: Int): Unit = {
         println("Enter Patient Id: ")
         val patientId = scala.io.StdIn.readInt()
-        medicalRecordActor ! getPatientMedicalRecord(patientId)
+        implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+        val result =  medicalRecordActor ? getPatientMedicalRecord(patientId)
+        result.onComplete{
+            case Success(onMedicalRecordsRetrieved(records)) =>
+                records.foreach { record =>
+                    val formattedRecord = record.formattedString
+                    println(s"The Needed Medical Record for Patient with ID : ($patientId), is:\n$formattedRecord")
+                }
+            showDoctorOptions(doctorId)
+            case Failure(exception) => println(s"Query failed due to : $exception" )
+        }
     }
 
-
-    def addMedicalRecordForPatient(): Unit = {
+    def addMedicalRecordForPatient(doctorId: Int): Unit = {
         medicalRecordActor ! addMedicalRecord(getMedicalRecordDataFromUser())
+        Thread.sleep(1500)
+        showDoctorOptions(doctor_id = doctorId )
     }
 
     def getMedicalRecordDataFromUser(): MedicalRecord = {

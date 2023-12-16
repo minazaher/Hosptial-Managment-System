@@ -1,6 +1,6 @@
 package UI
 
-import Actors.{AppointmentActor, CreateDoctor, DoctorActor, GetAppointments, Login, LoginFailure, LoginSuccess, StaffActor, addMedicalRecord, approveAppointment, getAppointmentByStatus, getPatientMedicalRecord, insertStaffMember, staffLogin}
+import Actors.{AppointmentActor, CreateDoctor, DoctorActor, GetAppointments, Login, LoginFailure, LoginSuccess, StaffActor, addMedicalRecord, approveAppointment, getAppointmentByStatus, getPatientMedicalRecord, insertStaffMember, onAppointmentsRetrieved, staffLogin}
 import DAO.{AppointmentDAO, DoctorDAO, StaffDAO}
 import Model.{Doctor, MedicalRecord, Staff}
 import UI.MainFunction.startMainUI
@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 
 object StaffUI {
   val db = Connection.db
-  val system: ActorSystem = ActorSystem("crudSystem")
+  val system: ActorSystem = ActorSystem("Hospital System")
 
   val staffDAO = new StaffDAO(db)
   val appointmentDAO = new AppointmentDAO(db)
@@ -70,9 +70,27 @@ object StaffUI {
   }
 
   def viewAllAppointments(staff_Id:Int) = {
-    appointmentActor ! getAppointmentByStatus("Pending")
-    Thread.sleep(5000)
-    selectAppointmentsToApproved(staff_Id)
+
+    implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+    val result = appointmentActor ? getAppointmentByStatus("Pending")
+
+    result.onComplete{
+      case Success(onAppointmentsRetrieved(appointments)) =>
+        if (appointments.isEmpty) {
+          println("No Appointments Found")
+          showStaffOptions(staff_Id)
+        }
+        else {
+          println(s"Pending Appointments  are : ")
+          appointments.foreach(appointment => println(appointment.toString))
+          selectAppointmentsToApproved(staff_Id)
+        }
+      case Failure(ex) =>
+        println(s"error due to : $ex" )
+        showStaffOptions(staff_Id)
+    }
+
   }
 
 
@@ -80,6 +98,9 @@ object StaffUI {
     println("Choose Appointment to Approve ")
     val choice:Int = scala.io.StdIn.readInt()
     appointmentActor ! approveAppointment(choice, staffId)
+    Thread.sleep(1500)
+    showStaffOptions(staffId)
+
   }
 
   def showStaffOptions(staff_Id: Int): Unit = {
@@ -96,13 +117,14 @@ object StaffUI {
         println("Invalid choice. Please enter a number between 1 and 2.")
         showStaffOptions(staff_Id)
     }
-    showStaffOptions(staff_Id)
   }
 
   def logout(): Unit = {
     println("Logout")
     startMainUI()
   }
+
+
   def signUpStaff(): Unit = {
     println("Please Enter your name: ")
     val name = scala.io.StdIn.readLine()

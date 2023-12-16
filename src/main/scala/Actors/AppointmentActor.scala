@@ -13,6 +13,7 @@ case class  getAppointmentsForDoctor(doctorId: Int)
 case class getAppointmentByStatus(status:String)
 case class approveAppointment(appointmentId: Int, staffId: Int)
 
+
 class AppointmentActor(dao: AppointmentDAO) extends Actor{
 
   override def receive: Receive = {
@@ -42,15 +43,15 @@ class AppointmentActor(dao: AppointmentDAO) extends Actor{
       }
 
     case getAppointmentByStatus(status) =>
+      val originalSender = sender()
       dao.getAppointmentsByStatus(status).onComplete
       {
         case Success(appointments) =>
           appointments match {
             case Nil =>
-              println("No appointments found.")
+              originalSender ! onAppointmentsRetrieved(Nil)
             case _ =>
-              println(s"Appointments with status $status are : ")
-              appointments.foreach(appointment => println(appointment.toString))
+              originalSender ! onAppointmentsRetrieved(appointments)
           }
         case Failure(ex) =>
           println(s"Query failed because of: $ex")

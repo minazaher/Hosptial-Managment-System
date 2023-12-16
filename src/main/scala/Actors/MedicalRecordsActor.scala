@@ -12,6 +12,8 @@ case class getMedicalRecordById(id: Int)
 case class addMedicalRecord(record: MedicalRecord)
 case class getPatientMedicalRecord(patientId: Int)
 
+case class onMedicalRecordsRetrieved(medicalRecords: Seq[MedicalRecord])
+
 class MedicalRecordsActor (dao: MedicalRecordDAO) extends Actor  {
 
 
@@ -22,12 +24,10 @@ class MedicalRecordsActor (dao: MedicalRecordDAO) extends Actor  {
         case Failure(ex) => println(s"Query Failed Because of : $ex")
       }
     case getPatientMedicalRecord(patientId) =>
+      val originalSender = sender()
       dao.getMedicalRecordForPatient(patientId).onComplete {
       case Success(recordOpt) =>
-        recordOpt.foreach { record =>
-          val formattedRecord = record.formattedString
-          println(s"The Needed Medical Record for Patient with ID : ($patientId), is:\n$formattedRecord")
-        }
+        originalSender ! onMedicalRecordsRetrieved(recordOpt)
       case Failure(ex) => println(s"Query Failed Because of : $ex")
     }
 
