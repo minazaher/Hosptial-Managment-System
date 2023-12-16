@@ -18,6 +18,8 @@ case class InitializeDoctorDAO(dao: DoctorDAO)
 case class Login(email: String)
 case class LoginSuccess(userId: Int)
 case class LoginFailure(message: String)
+case class GetAppointments(doctorId: Int)
+
 
 class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
 
@@ -41,7 +43,7 @@ class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
       loginResult.onComplete {
         case Success(Some(userId)) =>
 //          log.info(s"User with email $email logged in. User ID: $userId")
-          originalSender ! LoginSuccess(userId)
+          originalSender ! userId
 
         case Success(None) =>
 //          log.info(s"User with email $email doesn't exist.")
@@ -51,5 +53,15 @@ class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
 //          log.error(s"Login failed for email $email. Reason: ${ex.getMessage}")
           originalSender ! LoginFailure("Login failed.")
       }
+    case GetAppointments(doctorId) =>
+      val originalSender = sender()
+      val appointments = dao.getAppointments(doctorId)
+      appointments.onComplete {
+        case Success(appointments) =>
+          originalSender ! appointments
+        case Failure(ex) =>
+          originalSender ! s"Failed to get appointments. Reason: ${ex.getMessage}"
+      }
+
   }
 }

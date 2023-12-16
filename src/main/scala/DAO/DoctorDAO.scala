@@ -24,4 +24,9 @@ class DoctorDAO(val db: Database) {
   def doesDoctorExist(doctor: Doctor): Future[Boolean] = {
     db.run(doctors.filter(_.doctor_name === doctor.doctor_name).result.headOption).map(_.isDefined)
   }
+  def getAppointments(doctorId: Int): Future[Seq[Appointment]] = {
+    val appointments = TableQuery[AppointmentTable]
+    db.run(appointments.filter(_.doctor_id === doctorId).result)
+  }
+
 }
