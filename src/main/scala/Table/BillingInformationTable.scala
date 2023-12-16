@@ -5,7 +5,7 @@ import slick.jdbc.MySQLProfile.api._
 import java.sql.Date
 
 class BillingInformationTable(tag: Tag) extends Table[BillingInformation](tag, "BillingInformation") {
-  def bill_id = column[Int]("bill_id", O.PrimaryKey)
+  def bill_id = column[Int]("bill_id", O.PrimaryKey, O.AutoInc)
   def patient_id = column[Int]("patient_id")
   def billing_date = column[Date]("billing_date")
   def total_amount = column[BigDecimal]("total_amount")

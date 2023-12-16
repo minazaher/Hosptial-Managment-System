@@ -5,7 +5,7 @@ import slick.jdbc.MySQLProfile.api._
 import slick.lifted.Tag
 
 class MedicalRecordTable(tag: Tag) extends Table[MedicalRecord](tag, "MedicalRecords") {
-  def record_id = column[Int]("record_id", O.PrimaryKey)
+  def record_id = column[Int]("record_id", O.PrimaryKey, O.AutoInc)
   def patient_id = column[Int]("patient_id")
   def vital_signs = column[String]("vital_signs")
   def medical_history = column[String]("medical_history")

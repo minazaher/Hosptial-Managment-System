@@ -10,6 +10,8 @@ import scala.util.{Failure, Success}
 case class getAppointmentById(id: Int)
 case class addAppointment(appointment: Appointment)
 case class  getAppointmentsForDoctor(doctorId: Int)
+case class getAppointmentByStatus(status:String)
+case class approveAppointment(appointmentId: Int, staffId: Int)
 
 class AppointmentActor(dao: AppointmentDAO) extends Actor{
 
@@ -37,6 +39,27 @@ class AppointmentActor(dao: AppointmentDAO) extends Actor{
           }
         case Failure(ex) =>
           println(s"Query failed because of: $ex")
+      }
+
+    case getAppointmentByStatus(status) =>
+      dao.getAppointmentsByStatus(status).onComplete
+      {
+        case Success(appointments) =>
+          appointments match {
+            case Nil =>
+              println("No appointments found.")
+            case _ =>
+              println(s"Appointments with status $status are : ")
+              appointments.foreach(appointment => println(appointment.toString))
+          }
+        case Failure(ex) =>
+          println(s"Query failed because of: $ex")
+      }
+
+    case approveAppointment(appointmentId, staffId) =>
+      dao.approveAppointment(appointmentId,staffId).onComplete{
+        case Success(_) => println("Appointment Approved")
+        case Failure(ex) => println(s"Query failed because of: $ex")
       }
   }
 }

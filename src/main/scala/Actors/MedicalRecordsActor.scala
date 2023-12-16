@@ -18,7 +18,7 @@ class MedicalRecordsActor (dao: MedicalRecordDAO) extends Actor  {
   override def receive: Receive = {
     case addMedicalRecord(record) =>
       dao.addMedicalRecord(record).onComplete {
-        case Success(record) => println("Account Added")
+        case Success(_) => println("Record Added")
         case Failure(ex) => println(s"Query Failed Because of : $ex")
       }
     case getPatientMedicalRecord(patientId) =>

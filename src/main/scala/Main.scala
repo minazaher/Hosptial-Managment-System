@@ -1,6 +1,6 @@
 import Actors._
 import DAO._
-import Model.{Appointment, Doctor, MedicalRecord, Patient}
+import Model.{Appointment, Doctor, MedicalRecord, Patient, Staff}
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -24,17 +24,21 @@ object Main {
   val medicalRecordDao: MedicalRecordDAO = new MedicalRecordDAO(db)
   val appointmentDAO: AppointmentDAO = new AppointmentDAO(db)
   val labDao: LaboratoryResultDAO = new LaboratoryResultDAO(db)
+  val staffDao: StaffDAO = new StaffDAO(db)
 
   val doctorActor: ActorRef = system.actorOf(Props(new DoctorActor(doctorDAO)), "doctorActor")
   val patientActor: ActorRef = system.actorOf(Props(new PatientActor(patientDAO)), "patientActor")
   val medicalRecordActor: ActorRef = system.actorOf(Props(new MedicalRecordsActor(medicalRecordDao)), "medicalRecordActor")
   val appointmentActor: ActorRef = system.actorOf(Props(new AppointmentActor(appointmentDAO)), "appointmentActor")
   val labResultActor: ActorRef = system.actorOf(Props(new LaboratoryResultActor(labDao)), "labResultActor")
+  val staffActor: ActorRef = system.actorOf(Props(new StaffActor(staffDao)), "staffActor")
+
+
   def main(args: Array[String]): Unit = {
 
     println("Welcome to the Hospital Management System")
 
-    println("Are you a Doctor or a Patient? (Enter 'doctor' or 'patient')")
+    println("Select User Type? (Enter 'doctor' or 'patient' or 'staff member'")
     val userType = scala.io.StdIn.readLine().toLowerCase.trim
 
     userType match {
@@ -42,11 +46,72 @@ object Main {
         startDoctorScenario()
       case "patient" =>
         startPatientScenario()
+      case "staff member" =>
+        startStaffScenario()
       case _ =>
         println("Invalid user type. Please enter 'doctor' or 'patient'.")
     }
   }
 
+
+
+  def selectAppointmentsToApproved() = {
+    println("Choose Appointment to Approve ")
+    val choice:Int = scala.io.StdIn.readInt()
+   }
+
+  def signUpStaff(): Unit = {
+    println("Please Enter your name: ")
+    val name = scala.io.StdIn.readLine()
+
+    println("Please Enter your role: ")
+    val role = scala.io.StdIn.readLine()
+
+    println("Please Enter your email: ")
+    val email = scala.io.StdIn.readLine()
+    val member: Staff = Staff(0, name,role, email)
+
+    staffActor ! insertStaffMember(member)
+  }
+
+  def startStaffScenario(): Unit = {
+    val hasAccount = askIfHasAnAccount()
+    if (hasAccount == "yes") {
+      login()
+    }
+    else{
+      signUpStaff()
+    }
+  }
+  def login(): Unit ={
+    println("Please Enter Your Email: ")
+    val email = scala.io.StdIn.readLine()
+
+    implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+    val loginFuture = staffActor ? staffLogin(email)
+
+    loginFuture.onComplete{
+      case Success(LoginSuccess(staffId)) =>
+        println(s"User logged in with ID: $staffId")
+        showAppointmentsList()
+        val appointmentId = scala.io.StdIn.readInt()
+        appointmentActor ! approveAppointment(appointmentId, staffId)
+
+      case Success(LoginFailure(message)) =>
+        println(s"$message")
+        system.terminate()
+
+      case Failure(ex) =>
+        println(s"Login failed due to: ${ex.getMessage}")
+        system.terminate()
+    }
+  }
+
+
+  def showAppointmentsList(): Unit={
+    appointmentActor ! getAppointmentByStatus("Pending")
+  }
 
 
   @tailrec
@@ -125,7 +190,7 @@ object Main {
     println("Enter Appointment Purpose:")
     val appointmentPurpose = scala.io.StdIn.readLine()
 
-    Appointment(0, doctorId, patientId, new Timestamp(dateTime.getTime), appointmentPurpose)
+    Appointment(0, doctorId, patientId, new Timestamp(dateTime.getTime), appointmentPurpose, "Pending", 0)
   }
 
   def saveAppointment(appointment: Appointment): Unit = {
@@ -193,12 +258,16 @@ object Main {
     scala.io.StdIn.readLine().toLowerCase.trim
   }
 
+
+
   def loginUser(): Unit = {
     println("Please Enter you Email : ")
     val email  = scala.io.StdIn.readLine()
     implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
 
+
     val loginFuture = doctorActor ? Login(email)
+
 
     loginFuture.onComplete {
       case Success(LoginSuccess(userId)) =>
