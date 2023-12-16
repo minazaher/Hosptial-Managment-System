@@ -1,19 +1,20 @@
-import Actors.{AppointmentActor, CreateDoctor, DoctorActor, InitializeDoctorDAO, LaboratoryResultActor, MedicalRecordsActor, PatientActor, addAppointment, addMedicalRecord, getAppointmentsForDoctor, getLaboratoryResultsForPatient, getPatientMedicalRecord, insertPatient}
+import Actors._
 import DAO._
-import Main.askIfHasAnAccount
 import Model.{Appointment, Doctor, MedicalRecord, Patient}
-import Table.LaboratoryResultTable
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import config.Connection
 
 import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 object Main {
-  val db = Connection.db;
+  val db = Connection.db
 
 
   // Create ActorSystem and Actors
@@ -50,12 +51,12 @@ object Main {
 
   @tailrec
   def startPatientScenario(): Unit ={
-    val hasAccount = askIfHasAnAccount();
+    val hasAccount = askIfHasAnAccount()
     if (hasAccount == "yes") {
-      val patientId = getUserId;
-      showPatientOptions();
+//      val patientId = getUserId;
+      showPatientOptions()
       val option = scala.io.StdIn.readInt()
-      handlePatientOptionChoice(option, patientId)
+//      handlePatientOptionChoice(option, patientId)
     }
     else{
       signUpPatient()
@@ -132,7 +133,7 @@ object Main {
   }
 
   def reserveAppointment(patientId: Int): Unit = {
-    val appointment = getAppointmentDataFromUser(patientId);
+    val appointment = getAppointmentDataFromUser(patientId)
     saveAppointment(appointment)
   }
 
@@ -156,12 +157,10 @@ object Main {
 
   @tailrec
   def startDoctorScenario(): Unit = {
-    val hasAccount = askIfHasAnAccount();
+    val hasAccount = askIfHasAnAccount()
     if (hasAccount == "yes") {
-      val doctorId = getUserId;
-      showDoctorOptions();
-      val option = scala.io.StdIn.readInt()
-      handleDoctorOptionChoice(option, doctorId);
+      loginUser()
+//      showDoctorOptions();
     }
     else {
       signUpDoctor()
@@ -194,9 +193,30 @@ object Main {
     scala.io.StdIn.readLine().toLowerCase.trim
   }
 
-  def getUserId: Int = {
-    println("Please Enter you ID : ")
-    scala.io.StdIn.readInt()
+  def loginUser(): Unit = {
+    println("Please Enter you Email : ")
+    val email  = scala.io.StdIn.readLine()
+    implicit val timeout: Timeout = Timeout(5.seconds) // Define a timeout
+
+    val loginFuture = doctorActor ? Login(email)
+
+    loginFuture.onComplete {
+      case Success(LoginSuccess(userId)) =>
+        // Action upon successful login
+        println(s"User logged in with ID: $userId")
+        showDoctorOptions()
+        val option = scala.io.StdIn.readInt()
+        handleDoctorOptionChoice(option, userId);
+
+      case Success(LoginFailure(message)) =>
+        println(s"Login failed: $message")
+        system.terminate()
+
+      case Failure(ex) =>
+        // Handle any other failure during login attempt
+        println(s"Login failed due to: ${ex.getMessage}")
+        system.terminate()
+    }
   }
 
   def showDoctorOptions(): Unit = {
@@ -250,7 +270,7 @@ object Main {
     println("Medication Details:")
     val medicationDetails = scala.io.StdIn.readLine()
 
-    new MedicalRecord(0, patientId, vitalSigns, medicalHistory, medicationDetails)
+    MedicalRecord(0, patientId, vitalSigns, medicalHistory, medicationDetails)
   }
 
 }

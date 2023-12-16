@@ -3,6 +3,7 @@ import Table._
 import Model._
 import slick.jdbc.MySQLProfile.api._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DoctorDAO(val db: Database) {
@@ -16,4 +17,11 @@ class DoctorDAO(val db: Database) {
     db.run(doctors += doctor)
   }
 
+  def login(email: String): Future[Option[Int]] = {
+    db.run(doctors.filter(_.contact_info === email).map(_.doctor_id).result.headOption)
+  }
+
+  def doesDoctorExist(doctor: Doctor): Future[Boolean] = {
+    db.run(doctors.filter(_.doctor_name === doctor.doctor_name).result.headOption).map(_.isDefined)
+  }
 }
