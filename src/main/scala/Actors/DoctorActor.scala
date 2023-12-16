@@ -42,25 +42,19 @@ class DoctorActor(dao: DoctorDAO) extends Actor with ActorLogging {
       val loginResult = dao.login(email)
       loginResult.onComplete {
         case Success(Some(userId)) =>
-//          log.info(s"User with email $email logged in. User ID: $userId")
-          originalSender ! userId
+          originalSender ! LoginSuccess(userId)
 
         case Success(None) =>
-//          log.info(s"User with email $email doesn't exist.")
           originalSender ! LoginFailure("Account does not exist.")
 
         case Failure(ex) =>
-//          log.error(s"Login failed for email $email. Reason: ${ex.getMessage}")
           originalSender ! LoginFailure("Login failed.")
       }
     case GetAppointments(doctorId) =>
-      val originalSender = sender()
-      val appointments = dao.getAppointments(doctorId)
-      appointments.onComplete {
-        case Success(appointments) =>
-          originalSender ! appointments
-        case Failure(ex) =>
-          originalSender ! s"Failed to get appointments. Reason: ${ex.getMessage}"
+      val appointmentList = dao.getAppointments(doctorId)
+      appointmentList.onComplete {
+        case Success(appointments) => appointments.foreach(appointment => println(appointment.toString))
+        case Failure(ex) => println(s"error due to : $ex")
       }
 
   }

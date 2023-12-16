@@ -18,4 +18,8 @@ class PatientDAO(val db: Database) {
     db.run(patients += patient)
   }
 
+  def login(email: String): Future[Option[Int]] = {
+    db.run(patients.filter(_.contact_info === email).map(_.patient_id).result.headOption)
+  }
+
 }

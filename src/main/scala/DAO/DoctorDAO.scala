@@ -26,7 +26,7 @@ class DoctorDAO(val db: Database) {
   }
   def getAppointments(doctorId: Int): Future[Seq[Appointment]] = {
     val appointments = TableQuery[AppointmentTable]
-    db.run(appointments.filter(_.doctor_id === doctorId).result)
+    db.run(appointments.filter(_.doctor_id === doctorId).filter(_.status === "Approved").result)
   }
 
 }
